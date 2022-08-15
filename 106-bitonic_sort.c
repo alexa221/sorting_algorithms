@@ -1,89 +1,102 @@
 #include "sort.h"
-#include <stdio.h>
-
 /**
- * bitonic_compare - helper to bitonic_merge, sorts contents of current
- * subarray
- * @up: if true, sort in ascending order, false, descending
- * @x: subarray in current frame of recursion
- * @size: number of elements in `x`
+ * swap - swaps elements of the array checking the position
+ * @array: Array with numbers to be sorted
+ * @i: position
+ * @j: position
+ * @dir: 1 if is ascending
  */
-void bitonic_compare(bool up, int *x, size_t size)
+void swap(int *array, size_t i, size_t j, size_t dir)
 {
-	size_t dist, i;
-	int temp;
+	int tmp = 0;
 
-	dist = size / 2;
-	for (i = 0; i < dist; i++)
+	if (dir == (array[i] > array[j]))
 	{
-		if ((x[i] > x[i + dist]) == up)
-		{
-			temp = x[i];
-			x[i] = x[i + dist];
-			x[i + dist] = temp;
-		}
+		tmp = array[i];
+		array[i] = array[j];
+		array[j] = tmp;
 	}
 }
-
 /**
- * bitonic_merge - second recursive function of bitonic_sort, sorts subarrays
- * via bitonic_compare, and merges the sorted results
- * @up: if true, sort in ascending order, false, descending
- * @x: subarray in previous frame of recursion
- * @size: number of elements in `x`
- * @orig_size: number of elements in source array being sorted
+ * merge - swaps elements of the array
+ * @array: Array with numbers to be sorted
+ * @low: Starting point of the lower part of the array
+ * @size: size of the new partition
+ * @dir: 1 if is ascending
  */
-void bitonic_merge(bool up, int *x, size_t size, size_t orig_size)
+void merge(int *array, size_t low, size_t size, size_t dir)
 {
-	int *first, *second;
+	size_t k = 0, i = 0;
 
 	if (size > 1)
 	{
-		first = x;
-		second = x + (size / 2);
-		bitonic_compare(up, x, size);
-		bitonic_merge(up, first, size / 2, orig_size);
-		bitonic_merge(up, second, size / 2, orig_size);
+		k = size / 2;
+		i = low;
+		while (i < low + k)
+			swap(array, i, i + k, dir), i++;
+		merge(array, low, k, dir);
+		merge(array, low + k, k, dir);
 	}
 }
-
 /**
- * bitonic_sort_r - first recursive engine of bitonic_sort, divides array
- * into a binary tree of subarrays, and assigns sorting order.
- * @up: if true, sort in ascending order, false, descending
- * @x: subarray in previous frame of recursion
- * @size: number of elements in `x`
- * @orig_size: number of elements in source array being sorted
+ * sort_ - Sorts the array using recursion
+ * @array: Array with numbers to be sorted
+ * @low: Starting point of the lower part of the array
+ * @size: size of the new partition
+ * @dir: 1 if is ascending
+ * @length: size of the original array
  */
-void bitonic_sort_r(bool up, int *x, size_t size, size_t orig_size)
+void sort_(int *array, size_t low, size_t size, size_t dir, size_t length)
 {
-	int *first, *second;
+	size_t k = 0;
+	int *aux = NULL;
 
-	if (size <= 1)
-		return;
-	first = x;
-	second = x + (size / 2);
-	printf("Merging [%lu/%lu] (%s):\n", size, orig_size,
-	       (up ? "UP" : "DOWN"));
-	print_array(x, size);
-	bitonic_sort_r(true, first, size / 2, orig_size);
-	bitonic_sort_r(false, second, size / 2, orig_size);
-	bitonic_merge(up, first, size, orig_size);
-	printf("Result [%lu/%lu] (%s):\n", size, orig_size,
-	       (up ? "UP" : "DOWN"));
-	print_array(x, size);
+	if (size > 1)
+	{
+		k = size / 2;
+		if (k > 1)
+		{
+			printf("Merging [%li/%li] (UP):\n", k, length);
+			aux = &array[low];
+			print_array(aux, k);
+		}
+		sort_(array, low, k, 1, length);
+		if (k > 1)
+		{
+			printf("Result [%li/%li] (UP):\n", k, length);
+			print_array(aux, k);
+			printf("Merging [%li/%li] (DOWN):\n", k, length);
+			aux = &array[low + k];
+			print_array(aux, k);
+		}
+		sort_(array, low + k, k, 0, length);
+		if (k > 1)
+		{
+			printf("Result [%li/%li] (DOWN):\n", k, length);
+			print_array(aux, k);
+		}
+		merge(array, low, size, dir);
+	}
 }
-
 /**
- * bitonic_sort - sorts array of integers in ascending order using a bitonic
- * sort alogrithm
- * @array: array of values to be printed
- * @size: number of elements in array
+ * bitonic_sort - Bitonic sort is a comparison-based sorting algorithm
+ * that can be run in parallel. It focuses on converting a random sequence
+ * of numbers into a bitonic sequence, one that monotonically increases, then
+ * decreases. Rotations of a bitonic sequence are also bitonic.
+ * @array: Array of data to be sorted
+ * @size: size of the original array
  */
 void bitonic_sort(int *array, size_t size)
 {
-	if (!array || size == 0)
-		return;
+	size_t i = 1;
 
-	bitonic_sort_r(true, array, size, size);
+	while (i < size)
+		i <<= 1;
+	if (size < 2 || (i ^ size) != 0)
+		return;
+	printf("Mergin [%li/%li] (UP):\n", size, size);
+	print_array(array, size);
+	sort_(array, 0, size, 1, size);
+	printf("Result [%li/%li] (UP):\n", size, size);
+	print_array(array, size);
 }
